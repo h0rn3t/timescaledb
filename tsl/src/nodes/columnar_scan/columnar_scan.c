@@ -727,34 +727,16 @@ cost_columnar_scan(PlannerInfo *root, const CompressionInfo *compression_info, P
 		compressed_path->startup_cost +
 		(compressed_path->total_cost - compressed_path->startup_cost) / compressed_rows;
 
-	/* total_cost is cost for fetching all tuples */
-	/*
-	 * IMPROVEMENT: Apply selectivity of decompression-time filters.
-	 * If we have baserestrictinfo on the chunk_rel (filters that will be applied
-	 * after decompression), we should estimate how many rows will actually pass
-	 * those filters, rather than assuming all rows from all batches will be output.
-	 */
 	double decompressed_rows = compressed_path->rows * compression_info->compressed_batch_size;
 
-	/*
-	 * Get selectivity from chunk_rel's baserestrictinfo. These are the filters
-	 * that couldn't be pushed down to compressed chunk and will be applied
-	 * during decompression.
-	 */
 	if (compression_info->chunk_rel->baserestrictinfo != NIL)
 	{
 		List *decompression_filters = compression_info->chunk_rel->baserestrictinfo;
 		Selectivity filter_selectivity = clauselist_selectivity(root,
-																 decompression_filters,
-																 compression_info->chunk_rel->relid,
-																 JOIN_INNER,
-																 NULL);
-
-		/*
-		 * Apply filter selectivity to estimate actual output rows.
-		 * This prevents the planner from overestimating decompression costs
-		 * when most rows will be filtered out.
-		 */
+																decompression_filters,
+																compression_info->chunk_rel->relid,
+																JOIN_INNER,
+																NULL);
 		decompressed_rows = clamp_row_est(decompressed_rows * filter_selectivity);
 	}
 
