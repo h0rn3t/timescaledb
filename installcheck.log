@@ -1,0 +1,304 @@
+make: Entering directory '/home/runner/work/timescaledb/timescaledb/build'
+make[1]: Entering directory '/home/runner/work/timescaledb/timescaledb/build'
+make[2]: Entering directory '/home/runner/work/timescaledb/timescaledb/build'
+make[3]: Entering directory '/home/runner/work/timescaledb/timescaledb/build'
+make[3]: Leaving directory '/home/runner/work/timescaledb/timescaledb/build'
+make[3]: Entering directory '/home/runner/work/timescaledb/timescaledb/build'
+TESTS 
+SKIPS bgw_launcher memoize net bgw_db_scheduler telemetry bgw_job_stat_history bgw_db_scheduler_fixed
+# initializing database system by running initdb
+# using temp instance on port 55432 with PID 6379
+ok 1         - compression_ddl_iso                      1134 ms
+ok 2         - compression_conflicts_iso               82059 ms
+ok 3         - cagg_insert                              1108 ms
+ok 4         - cagg_multi_iso                            295 ms
+ok 5         - deadlock_drop_chunks_compress            2779 ms
+ok 6         - deadlock_drop_index_vacuum                115 ms
+ok 7         - parallel_compression                      810 ms
+ok 8         - osm_range_updates_iso                     429 ms
+ok 9         - concurrent_decompress_update              353 ms
+ok 10        - bgw_job_stat_history_retention_isolation       63 ms
+ok 11        - reorder_deadlock                           94 ms
+ok 12        - reorder_vs_insert_other_chunk              90 ms
+1..12
+# All 12 tests passed.
+make[3]: Leaving directory '/home/runner/work/timescaledb/timescaledb/build'
+Built target isolationcheck-t
+make[3]: Entering directory '/home/runner/work/timescaledb/timescaledb/build'
+make[3]: Leaving directory '/home/runner/work/timescaledb/timescaledb/build'
+make[3]: Entering directory '/home/runner/work/timescaledb/timescaledb/build'
+TESTS 
+SKIPS bgw_launcher memoize net bgw_db_scheduler telemetry bgw_job_stat_history bgw_db_scheduler_fixed
+# initializing database system by running initdb
+# using temp instance on port 55432 with PID 6789
+ok 1         - move                                      407 ms
+ok 2         - reorder                                   372 ms
+ok 3         - split_chunk                              1714 ms
+ok 4         - cagg_invalidation                         544 ms
+ok 5         - cagg_invalidation_multi                   886 ms
+ok 6         - cagg_plugin                              7761 ms
+# parallel group (11 tests):  cagg_config cagg_deprecated_bucket_ng bgw_job_ddl bgw_security cagg_errors cagg_permissions-18 cagg_api bgw_policy cagg_planning bgw_telemetry agg_partials_pushdown
+ok 7         + agg_partials_pushdown                    2715 ms
+ok 8         + bgw_job_ddl                              1274 ms
+ok 9         + bgw_policy                               1520 ms
+ok 10        + bgw_security                             1279 ms
+ok 11        + bgw_telemetry                            1920 ms
+ok 12        + cagg_api                                 1503 ms
+ok 13        + cagg_config                              1233 ms
+ok 14        + cagg_deprecated_bucket_ng                1265 ms
+ok 15        + cagg_errors                              1420 ms
+ok 16        + cagg_permissions-18                      1459 ms
+ok 17        + cagg_planning                            1897 ms
+# parallel group (11 tests):  cagg_policy_move cagg_utils cagg_refresh_using_trigger cagg_union_view-18 cagg_refresh_using_merge cagg_watermark cagg_query-18 cagg_query_using_merge-18 cagg_refresh_using_wal cagg_policy cagg_policy_concurrent
+ok 18        + cagg_policy                              3758 ms
+ok 19        + cagg_policy_concurrent                   4141 ms
+ok 20        + cagg_policy_move                         1819 ms
+ok 21        + cagg_query-18                            3020 ms
+ok 22        + cagg_query_using_merge-18                3060 ms
+ok 23        + cagg_refresh_using_merge                 2338 ms
+ok 24        + cagg_refresh_using_trigger               2099 ms
+ok 25        + cagg_refresh_using_wal                   3561 ms
+ok 26        + cagg_union_view-18                       2173 ms
+ok 27        + cagg_utils                               1851 ms
+ok 28        + cagg_watermark                           2661 ms
+# parallel group (11 tests):  compress_float8_corrupt compress_sort_transform compress_dml_copy columnstore_aliases chunk_column_stats compress_default compress_auto_sparse_index compress_qualpushdown_saop compress_bloom_sparse-18 compress_bitmap_scan columnar_scan_cost
+ok 29        + chunk_column_stats                       1719 ms
+not ok 30    + columnar_scan_cost                       9176 ms
+ok 31        + columnstore_aliases                      1632 ms
+ok 32        + compress_auto_sparse_index               2784 ms
+ok 33        + compress_bitmap_scan                     8876 ms
+ok 34        + compress_bloom_sparse-18                 5085 ms
+ok 35        + compress_default                         1895 ms
+ok 36        + compress_dml_copy                        1611 ms
+ok 37        + compress_float8_corrupt                  1558 ms
+ok 38        + compress_qualpushdown_saop               5068 ms
+ok 39        + compress_sort_transform                  1600 ms
+# parallel group (11 tests):  compression_fks compressed_collation compression_create_compressed_table compression_indexcreate compression_conflicts compression_constraints compress_sparse_config compressed_detoaster compression compression_defaults compression_allocation
+ok 40        + compress_sparse_config                   4278 ms
+ok 41        + compressed_collation                     2869 ms
+ok 42        + compressed_detoaster                     4284 ms
+ok 43        + compression                              4287 ms
+ok 44        + compression_allocation                  16204 ms
+ok 45        + compression_conflicts                    2879 ms
+ok 46        + compression_constraints                  2884 ms
+ok 47        + compression_create_compressed_table      2877 ms
+ok 48        + compression_defaults                     4307 ms
+ok 49        + compression_fks                          2860 ms
+ok 50        + compression_indexcreate                  2870 ms
+# parallel group (11 tests):  compression_policy compression_trigger compression_settings compression_sequence_num_removal compression_nulls_and_defaults compression_permissions-18 compression_null_dump_restore compression_insert compression_qualpushdown compression_sorted_merge_distinct compression_sorted_merge
+ok 51        + compression_insert                       3311 ms
+ok 52        + compression_null_dump_restore            2821 ms
+ok 53        + compression_nulls_and_defaults           1930 ms
+ok 54        + compression_permissions-18               2313 ms
+ok 55        + compression_policy                       1734 ms
+ok 56        + compression_qualpushdown                 4560 ms
+ok 57        + compression_sequence_num_removal         1840 ms
+ok 58        + compression_settings                     1833 ms
+ok 59        + compression_sorted_merge                12576 ms
+ok 60        + compression_sorted_merge_distinct        9790 ms
+ok 61        + compression_trigger                      1784 ms
+# parallel group (11 tests):  custom_hashagg merge_compress direct_compress_insert merge_append_partially_compressed create_table_with jit decompress_index foreign_keys_test-18 merge_chunks compression_uuid direct_compress_copy
+ok 62        + compression_uuid                        15813 ms
+ok 63        + create_table_with                        7151 ms
+ok 64        + custom_hashagg                           2390 ms
+ok 65        + decompress_index                         8548 ms
+ok 66        + direct_compress_copy                    36012 ms
+ok 67        + direct_compress_insert                   7149 ms
+ok 68        + foreign_keys_test-18                     8547 ms
+ok 69        + jit                                      7164 ms
+not ok 70    + merge_append_partially_compressed        7149 ms
+ok 71        + merge_chunks                            11911 ms
+ok 72        + merge_compress                           7128 ms
+# parallel group (11 tests):  size_utils_tsl privilege_maintain modify_exclusion-18 plan_skip_scan_notnull recompression_integrity_tests plan_skip_scan_dagg-18 plan_skip_scan-18 skip_scan_dagg policy_generalization ordered_append-18 skip_scan
+ok 73        + modify_exclusion-18                      1925 ms
+ok 74        + ordered_append-18                        7842 ms
+not ok 75    + plan_skip_scan-18                        6330 ms
+not ok 76    + plan_skip_scan_dagg-18                   4798 ms
+ok 77        + plan_skip_scan_notnull                   2842 ms
+ok 78        + policy_generalization                    7501 ms
+ok 79        + privilege_maintain                       1671 ms
+ok 80        + recompression_integrity_tests            3319 ms
+ok 81        + size_utils_tsl                           1639 ms
+not ok 82    + skip_scan                               17892 ms
+ok 83        + skip_scan_dagg                           6673 ms
+# parallel group (8 tests):  transparent_decompression_join_index vector_agg_param unlogged transparent_decompression_ordered_index-18 vector_agg_groupagg vectorized_aggregation vector_agg_functions transparent_decompression-18
+not ok 84    + transparent_decompression-18            12217 ms
+not ok 85    + transparent_decompression_join_index      985 ms
+not ok 86    + transparent_decompression_ordered_index-18     2336 ms
+ok 87        + unlogged                                 1010 ms
+ok 88        + vector_agg_functions                     6750 ms
+ok 89        + vector_agg_groupagg                      2991 ms
+ok 90        + vector_agg_param                         1002 ms
+ok 91        + vectorized_aggregation                   3193 ms
+1..91
+make[3]: Leaving directory '/home/runner/work/timescaledb/timescaledb/build'
+make[3]: Entering directory '/home/runner/work/timescaledb/timescaledb/build'
+make[3]: Leaving directory '/home/runner/work/timescaledb/timescaledb/build'
+make[3]: Entering directory '/home/runner/work/timescaledb/timescaledb/build'
+TESTS 
+SKIPS bgw_launcher memoize net bgw_db_scheduler telemetry bgw_job_stat_history bgw_db_scheduler_fixed
+# initializing database system by running initdb
+# using temp instance on port 55432 with PID 34519
+# parallel group (19 tests):  build_info compress_bloom_sparse_compat chunkwise_agg_gather_sort classify_relation generated_columns gapfill_bug compress_unique_index constify_timestamptz_op_interval-18 constraint_aware_append compat decompress_tracking decompress_placeholdervar compression_nulls_not_distinct decompress_join constraint_exclusion_prepared-18 ordered_append_join-18 gapfill-18 compression_dml cagg_compression
+ok 1         + build_info                               1984 ms
+ok 2         + cagg_compression                         6320 ms
+ok 3         + chunkwise_agg_gather_sort                2253 ms
+ok 4         + classify_relation                        2280 ms
+ok 5         + compat                                   2603 ms
+ok 6         + compress_bloom_sparse_compat             2225 ms
+ok 7         + compress_unique_index                    2441 ms
+ok 8         + compression_dml                          5876 ms
+ok 9         + compression_nulls_not_distinct           2629 ms
+ok 10        + constify_timestamptz_op_interval-18      2487 ms
+ok 11        + constraint_aware_append                  2520 ms
+not ok 12    + constraint_exclusion_prepared-18         3625 ms
+ok 13        + decompress_join                          3118 ms
+ok 14        + decompress_placeholdervar                2613 ms
+ok 15        + decompress_tracking                      2596 ms
+ok 16        + gapfill-18                               4117 ms
+ok 17        + gapfill_bug                              2417 ms
+ok 18        + generated_columns                        2306 ms
+not ok 19    + ordered_append_join-18                   3789 ms
+# parallel group (4 tests):  subtract_integer_from_now security_barrier space_constraint-18 transparent_decompress_chunk-18
+ok 20        + security_barrier                          112 ms
+ok 21        + space_constraint-18                       174 ms
+ok 22        + subtract_integer_from_now                  78 ms
+not ok 23    + transparent_decompress_chunk-18           199 ms
+ok 24        - merge_dml                                1818 ms
+1..24
+make[3]: Leaving directory '/home/runner/work/timescaledb/timescaledb/build'
+make[3]: Entering directory '/home/runner/work/timescaledb/timescaledb/build'
+make[3]: Leaving directory '/home/runner/work/timescaledb/timescaledb/build'
+make[3]: Entering directory '/home/runner/work/timescaledb/timescaledb/build'
+SKIPS: 
+t/001_job_crash_log.pl ................. ok
+t/002_logrepl_decomp_marker.pl ......... ok
+t/004_truncate_or_delete_spin_lock.pl .. ok
+All tests successful.
+Files=3, Tests=30, 11 wallclock secs ( 0.03 usr  0.01 sys +  1.84 cusr  0.89 csys =  2.77 CPU)
+Result: PASS
+make[3]: Leaving directory '/home/runner/work/timescaledb/timescaledb/build'
+Built target provecheck-t
+make[3]: Entering directory '/home/runner/work/timescaledb/timescaledb/build'
+make[3]: Leaving directory '/home/runner/work/timescaledb/timescaledb/build'
+make[3]: Entering directory '/home/runner/work/timescaledb/timescaledb/build'
+TESTS 
+SKIPS bgw_launcher memoize net bgw_db_scheduler telemetry bgw_job_stat_history bgw_db_scheduler_fixed
+# initializing database system by running initdb
+# using temp instance on port 55432 with PID 35628
+ok 1         - alter                                     517 ms
+ok 2         - alternate_users                           356 ms
+ok 3         - chunk_utils                               664 ms
+ok 4         - index                                     407 ms
+ok 5         - tablespace                                328 ms
+# parallel group (21 tests):  baserel_cache chunks custom_type copy_where catalog_corruption ddl_extra ddl_errors create_table cursor delete cluster create_chunks create_table_with ddl debug_utils constraint agg_bookends-18 create_hypertable copy chunk_adaptive append-18
+ok 6         + agg_bookends-18                          3323 ms
+ok 7         + append-18                                9047 ms
+ok 8         + baserel_cache                            2601 ms
+ok 9         + catalog_corruption                       2707 ms
+ok 10        + chunk_adaptive                           4990 ms
+ok 11        + chunks                                   2681 ms
+ok 12        + cluster                                  2764 ms
+ok 13        + constraint                               3192 ms
+ok 14        + copy                                     4905 ms
+ok 15        + copy_where                               2694 ms
+ok 16        + create_chunks                            2755 ms
+ok 17        + create_hypertable                        3389 ms
+ok 18        + create_table                             2710 ms
+ok 19        + create_table_with                        2862 ms
+ok 20        + cursor                                   2710 ms
+ok 21        + custom_type                              2675 ms
+ok 22        + ddl                                      2976 ms
+ok 23        + ddl_errors                               2696 ms
+ok 24        + ddl_extra                                2691 ms
+ok 25        + debug_utils                              2997 ms
+ok 26        + delete                                   2692 ms
+# parallel group (21 tests):  hash generated_as_identity null_exclusion-18 histogram_test-18 license drop_schema drop_hypertable insert_returning grant_hypertable-18 drop_rename_hypertable dump_meta lateral information_views drop_owned-18 insert_single drop_extension merge extension_scripts insert-18 insert_many parallel-18
+ok 27        + drop_extension                           3175 ms
+ok 28        + drop_hypertable                          2648 ms
+ok 29        + drop_owned-18                            2930 ms
+ok 30        + drop_rename_hypertable                   2694 ms
+ok 31        + drop_schema                              2638 ms
+ok 32        + dump_meta                                2697 ms
+ok 33        + extension_scripts                        3900 ms
+ok 34        + generated_as_identity                    2597 ms
+ok 35        + grant_hypertable-18                      2690 ms
+ok 36        + hash                                     2526 ms
+ok 37        + histogram_test-18                        2608 ms
+ok 38        + information_views                        2787 ms
+ok 39        + insert-18                                4198 ms
+ok 40        + insert_many                              4265 ms
+ok 41        + insert_returning                         2638 ms
+ok 42        + insert_single                            2959 ms
+ok 43        + lateral                                  2687 ms
+ok 44        + license                                  2620 ms
+ok 45        + merge                                    3403 ms
+ok 46        + null_exclusion-18                        2582 ms
+ok 47        + parallel-18                              5393 ms
+# parallel group (21 tests):  plan_hypertable_inline tableam partitioning sql_query reloptions plain tableam_alter_defaults tableam_alter timestamp-18 partitionwise-18 repair partition relocate_extension sort_optimization size_utils query rowsecurity-18 plan_expand_hypertable-18 plan_ordered_append-18 plan_hashagg-18 pg_join
+ok 48        + partition                                3536 ms
+ok 49        + partitioning                             2463 ms
+ok 50        + partitionwise-18                         2938 ms
+ok 51        + pg_join                                 30821 ms
+ok 52        + plain                                    2533 ms
+ok 53        + plan_expand_hypertable-18                7945 ms
+ok 54        + plan_hashagg-18                         15417 ms
+ok 55        + plan_hypertable_inline                   2451 ms
+ok 56        + plan_ordered_append-18                   9856 ms
+ok 57        + query                                    7923 ms
+ok 58        + relocate_extension                       3632 ms
+ok 59        + reloptions                               2520 ms
+ok 60        + repair                                   3524 ms
+ok 61        + rowsecurity-18                           7929 ms
+ok 62        + size_utils                               7893 ms
+ok 63        + sort_optimization                        3667 ms
+ok 64        + sql_query                                2475 ms
+ok 65        + tableam                                  2444 ms
+ok 66        + tableam_alter                            2777 ms
+ok 67        + tableam_alter_defaults                   2513 ms
+ok 68        + timestamp-18                             2807 ms
+# parallel group (11 tests):  upsert version util update vacuum_parallel vacuum triggers trusted_extension truncate uuid ts_merge-18
+ok 69        + triggers                                 1720 ms
+ok 70        + truncate                                 1812 ms
+ok 71        + trusted_extension                        1773 ms
+ok 72        + ts_merge-18                              5855 ms
+ok 73        + update                                   1490 ms
+ok 74        + upsert                                   1465 ms
+ok 75        + util                                     1482 ms
+ok 76        + uuid                                     1838 ms
+ok 77        + vacuum                                   1488 ms
+ok 78        + vacuum_parallel                          1483 ms
+ok 79        + version                                  1472 ms
+1..79
+# All 79 tests passed.
+make[3]: Leaving directory '/home/runner/work/timescaledb/timescaledb/build'
+Built target regresscheck
+make[3]: Entering directory '/home/runner/work/timescaledb/timescaledb/build'
+make[3]: Leaving directory '/home/runner/work/timescaledb/timescaledb/build'
+make[3]: Entering directory '/home/runner/work/timescaledb/timescaledb/build'
+TESTS 
+SKIPS bgw_launcher memoize net bgw_db_scheduler telemetry bgw_job_stat_history bgw_db_scheduler_fixed
+# initializing database system by running initdb
+# using temp instance on port 55432 with PID 39110
+ok 1         - deadlock_dropchunks_select              14967 ms
+ok 2         - insert_dropchunks_race                     49 ms
+ok 3         - isolation_nop                              23 ms
+ok 4         - read_committed_insert                    1082 ms
+ok 5         - read_uncommitted_insert                  1080 ms
+ok 6         - repeatable_read_insert                   1080 ms
+ok 7         - serializable_insert_rollback             1082 ms
+ok 8         - serializable_insert                      1080 ms
+1..8
+# All 8 tests passed.
+make[3]: Leaving directory '/home/runner/work/timescaledb/timescaledb/build'
+Built target isolationcheck
+make[3]: Entering directory '/home/runner/work/timescaledb/timescaledb/build'
+make[3]: Leaving directory '/home/runner/work/timescaledb/timescaledb/build'
+make[3]: Entering directory '/home/runner/work/timescaledb/timescaledb/build'
+SKIPS: 
+No TAP tests to run for the current configuration, skipping...
+make[3]: Leaving directory '/home/runner/work/timescaledb/timescaledb/build'
+Built target provecheck
+make[2]: Leaving directory '/home/runner/work/timescaledb/timescaledb/build'
+make[1]: Leaving directory '/home/runner/work/timescaledb/timescaledb/build'
+make: Leaving directory '/home/runner/work/timescaledb/timescaledb/build'
