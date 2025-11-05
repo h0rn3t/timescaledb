@@ -727,8 +727,17 @@ cost_columnar_scan(PlannerInfo *root, const CompressionInfo *compression_info, P
 		compressed_path->startup_cost +
 		(compressed_path->total_cost - compressed_path->startup_cost) / compressed_rows;
 
-	double decompressed_rows = compressed_path->rows * compression_info->compressed_batch_size;
+	/* Calculate total rows that will be decompressed from all batches.
+	 * This is the amount of work we need to do, regardless of filtering. */
+	double total_decompressed_rows = compressed_path->rows * compression_info->compressed_batch_size;
 
+	/* Output rows is what we expect to return after applying filters.
+	 * Start with the assumption that all decompressed rows pass through. */
+	double output_rows = total_decompressed_rows;
+
+	/* If we have filters that couldn't be pushed down to compressed data,
+	 * they will be applied during/after decompression. Use selectivity
+	 * to estimate how many rows will actually pass these filters. */
 	if (compression_info->chunk_rel->baserestrictinfo != NIL)
 	{
 		List *decompression_filters = compression_info->chunk_rel->baserestrictinfo;
@@ -737,11 +746,17 @@ cost_columnar_scan(PlannerInfo *root, const CompressionInfo *compression_info, P
 																compression_info->chunk_rel->relid,
 																JOIN_INNER,
 																NULL);
-		decompressed_rows = clamp_row_est(decompressed_rows * filter_selectivity);
+		/* Apply selectivity only to output rows estimate */
+		output_rows = clamp_row_est(total_decompressed_rows * filter_selectivity);
 	}
 
-	path->rows = decompressed_rows;
-	path->total_cost = compressed_path->total_cost + decompressed_rows * cpu_tuple_cost;
+	/* path->rows represents the number of rows we expect to output */
+	path->rows = output_rows;
+
+	/* total_cost must account for decompressing ALL rows, not just those that pass filters.
+	 * Even with highly selective filters, we still decompress every row from every batch
+	 * and then apply the filter. The cost is proportional to rows processed, not rows output. */
+	path->total_cost = compressed_path->total_cost + total_decompressed_rows * cpu_tuple_cost;
 
 #if PG18_GE
 	/* PG18 changes the way we handle disabled nodes so we
