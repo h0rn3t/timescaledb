@@ -223,3 +223,74 @@ Limit
 - Previous fix: commit 5474423 "Fix cost estimation bug in ColumnarScan"
 - Code: `tsl/src/nodes/columnar_scan/columnar_scan.c:720-759`
 - PG17 MergeAppend bug fix reference: `columnar_scan.c:1173-1174`
+
+---
+
+## UPDATE: Root Cause Found and Fixed!
+
+### The Real Problem
+
+The issue was NOT in PostgreSQL 17 applying post-processing to our costs. Instead:
+
+1. **In `set_compressed_baserel_size_estimates()`** (line 538), we call PostgreSQL's `set_baserel_size_estimates(root, compressed_rel)`
+
+2. **This function applies baserestrictinfo selectivity** to `compressed_rel->rows`, reducing the batch count based on value filters
+
+3. **When we create `compressed_path`** via `create_seqscan_path()`, it uses the already-reduced `compressed_rel->rows`
+
+4. **In `cost_columnar_scan()`**, we were using:
+   ```c
+   total_decompressed_rows = compressed_path->rows * batch_size
+   ```
+   But `compressed_path->rows` already had selectivity applied!
+
+### Example of the Bug
+
+```
+Original batches: 10
+Filter: c = '100' (selectivity 0.005)
+
+After set_baserel_size_estimates:
+  compressed_rel->rows = 10 * 0.005 = 0.05
+
+When we call create_seqscan_path:
+  compressed_path->rows = 0.05
+
+In cost_columnar_scan (WRONG):
+  total_decompressed = 0.05 * 1000 = 50
+  cost = 1.10 + (50 * 0.01) = 1.60 ❌
+```
+
+### The Fix
+
+Added `CompressionInfo.original_compressed_rows` field to save the batch count BEFORE selectivity is applied:
+
+```c
+// In set_compressed_baserel_size_estimates():
+compression_info->original_compressed_rows = rel->rows;  // BEFORE selectivity
+set_baserel_size_estimates(root, rel);  // AFTER selectivity
+
+// In cost_columnar_scan():
+double total_decompressed_rows = compression_info->original_compressed_rows *
+                                  compression_info->compressed_batch_size;
+```
+
+### Why This Matters
+
+Value filters (like `c = '100'`) can't be pushed down to compressed metadata (min/max).
+They're applied AFTER decompression. So we must:
+
+1. Read all batches matching metadata filters (min/max ranges)
+2. Decompress ALL rows from those batches
+3. Apply value filters to decompressed rows
+
+The cost is proportional to STEP 2 (all decompressed rows), not STEP 3 (filtered output).
+
+### Files Changed
+
+- `tsl/src/nodes/columnar_scan/columnar_scan.h` - Added `original_compressed_rows` field
+- `tsl/src/nodes/columnar_scan/columnar_scan.c` - Save and use original value
+
+### Expected Impact
+
+This fix should resolve all 11 failing regression tests by restoring correct cost estimates for ColumnarScan operations.
