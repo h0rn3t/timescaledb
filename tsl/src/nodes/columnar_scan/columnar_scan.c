@@ -532,27 +532,24 @@ set_compressed_baserel_size_estimates(PlannerInfo *root, RelOptInfo *rel,
 		var->varattno = context.min_to_max[var->varattno];
 	}
 
+	/* Save original compressed batch count BEFORE selectivity is applied.
+	 * We need rel->tuples because it contains the base row count from pg_class,
+	 * which represents the actual number of compressed batches.
+	 *
+	 * IMPORTANT: Must save BEFORE calling set_baserel_size_estimates() because
+	 * that function applies baserestrictinfo selectivity to rel->rows AND may
+	 * also modify rel->tuples in some PG versions.
+	 *
+	 * We need the original batch count because we must account for decompressing
+	 * ALL batches that match metadata filters (min/max ranges), regardless of
+	 * value filter selectivity. Value filters are applied AFTER decompression,
+	 * so the cost must reflect the actual decompression work. */
+	compression_info->original_compressed_rows = rel->tuples;
+
 	/*
 	 * Compute selectivity with the updated filters.
 	 */
 	set_baserel_size_estimates(root, rel);
-
-	/* Save original rows before selectivity is applied.
-	 * PostgreSQL version-specific behavior:
-	 *
-	 * PG17+: set_baserel_size_estimates() aggressively applies baserestrictinfo
-	 * selectivity to rel->rows, reducing batch count based on value filters.
-	 * Use rel->tuples (base count from pg_class) since we must decompress ALL
-	 * batches matching metadata filters, regardless of value filter selectivity.
-	 *
-	 * PG16 and below: set_baserel_size_estimates() applies selectivity moderately.
-	 * Use rel->rows which already contains the correct estimate for batches to
-	 * decompress after metadata filter pushdown. */
-#if PG17_GE
-	compression_info->original_compressed_rows = rel->tuples;
-#else
-	compression_info->original_compressed_rows = rel->rows;
-#endif
 
 	/*
 	 * Replace the Vars back.
@@ -744,65 +741,27 @@ cost_columnar_scan(PlannerInfo *root, const CompressionInfo *compression_info, P
 		compressed_path->startup_cost +
 		(compressed_path->total_cost - compressed_path->startup_cost) / compressed_rows;
 
-	/* Calculate total rows that will be decompressed from all batches.
-	 * This is the amount of work we need to do, regardless of filtering.
+	/* Calculate output rows and decompression cost.
 	 *
-	 * CRITICAL: We must use original_compressed_rows here, NOT compressed_path->rows!
-	 * In PG17, set_baserel_size_estimates applies baserestrictinfo selectivity to
-	 * compressed_rel->rows, which reduces the batch count. But we still need to
-	 * decompress ALL batches that match metadata filters (min/max ranges), not just
-	 * the fraction that pass value filters. The value filters are applied AFTER
-	 * decompression, so the cost must reflect decompressing all matching batches. */
+	 * CRITICAL: We must use original_compressed_rows (from rel->tuples, saved
+	 * before set_baserel_size_estimates) for cost calculation, NOT compressed_path->rows!
+	 *
+	 * compressed_path->rows already accounts for metadata filters (min/max ranges,
+	 * bloom filters) that were pushed down to the compressed scan. We multiply by
+	 * compressed_batch_size to get the estimated number of decompressed rows.
+	 *
+	 * For cost calculation, we use original_compressed_rows because we need to
+	 * account for ALL batches that will be decompressed, regardless of any
+	 * selectivity estimates that PostgreSQL may have applied to compressed_rel->rows.
+	 * This ensures consistent cost estimation across PostgreSQL versions. */
+	path->rows = compressed_path->rows * compression_info->compressed_batch_size;
+
+	/* total_cost accounts for decompressing ALL batches.
+	 * We use original_compressed_rows here to ensure we capture the full
+	 * decompression cost, regardless of filter selectivity. */
 	double total_decompressed_rows =
 		compression_info->original_compressed_rows * compression_info->compressed_batch_size;
-
-	/* Output rows is what we expect to return after applying filters.
-	 * Start with the assumption that all decompressed rows pass through. */
-	double output_rows = total_decompressed_rows;
-
-	Selectivity filter_selectivity = 1.0;
-
-	/* If we have filters that couldn't be pushed down to compressed data,
-	 * they will be applied during/after decompression. Use selectivity
-	 * to estimate how many rows will actually pass these filters. */
-	if (compression_info->chunk_rel->baserestrictinfo != NIL)
-	{
-		List *decompression_filters = compression_info->chunk_rel->baserestrictinfo;
-		filter_selectivity = clauselist_selectivity(root,
-													decompression_filters,
-													compression_info->chunk_rel->relid,
-													JOIN_INNER,
-													NULL);
-		/* Apply selectivity only to output rows estimate */
-		output_rows = clamp_row_est(total_decompressed_rows * filter_selectivity);
-	}
-
-	/* Debug logging for PG17 cost investigation */
-	elog(DEBUG1,
-		 "cost_columnar_scan: original_compressed=%.0f, compressed_path_rows=%.0f, "
-		 "batch_size=%.0f, total_decompressed=%.0f, selectivity=%.4f, output_rows=%.0f, "
-		 "compressed_cost=%.2f, cpu_tuple_cost=%.4f",
-		 compression_info->original_compressed_rows,
-		 compressed_path->rows,
-		 compression_info->compressed_batch_size,
-		 total_decompressed_rows,
-		 filter_selectivity,
-		 output_rows,
-		 compressed_path->total_cost,
-		 cpu_tuple_cost);
-
-	/* path->rows represents the number of rows we expect to output */
-	path->rows = output_rows;
-
-	/* total_cost must account for decompressing ALL rows, not just those that pass filters.
-	 * Even with highly selective filters, we still decompress every row from every batch
-	 * and then apply the filter. The cost is proportional to rows processed, not rows output. */
 	path->total_cost = compressed_path->total_cost + total_decompressed_rows * cpu_tuple_cost;
-
-	elog(DEBUG1,
-		 "cost_columnar_scan: final path->rows=%.0f, path->total_cost=%.2f",
-		 path->rows,
-		 path->total_cost);
 
 #if PG18_GE
 	/* PG18 changes the way we handle disabled nodes so we
