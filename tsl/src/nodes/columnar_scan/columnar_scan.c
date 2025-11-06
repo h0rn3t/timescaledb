@@ -538,16 +538,21 @@ set_compressed_baserel_size_estimates(PlannerInfo *root, RelOptInfo *rel,
 	set_baserel_size_estimates(root, rel);
 
 	/* Save original rows before selectivity is applied.
-	 * CRITICAL: Use rel->tuples, not rel->rows!
-	 * - rel->tuples = base row count from pg_class (without filter selectivity)
-	 * - rel->rows = estimated rows after applying baserestrictinfo selectivity
+	 * PostgreSQL version-specific behavior:
 	 *
-	 * In PG17, set_baserel_size_estimates applies baserestrictinfo selectivity
-	 * which reduces rel->rows. We need the original compressed row count
-	 * (number of batches matching metadata filters) to correctly calculate
-	 * decompression cost, since we must decompress ALL batches regardless of
-	 * value filter selectivity. */
+	 * PG17+: set_baserel_size_estimates() aggressively applies baserestrictinfo
+	 * selectivity to rel->rows, reducing batch count based on value filters.
+	 * Use rel->tuples (base count from pg_class) since we must decompress ALL
+	 * batches matching metadata filters, regardless of value filter selectivity.
+	 *
+	 * PG16 and below: set_baserel_size_estimates() applies selectivity moderately.
+	 * Use rel->rows which already contains the correct estimate for batches to
+	 * decompress after metadata filter pushdown. */
+#if PG17_GE
 	compression_info->original_compressed_rows = rel->tuples;
+#else
+	compression_info->original_compressed_rows = rel->rows;
+#endif
 
 	/*
 	 * Replace the Vars back.
