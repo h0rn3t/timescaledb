@@ -532,16 +532,22 @@ set_compressed_baserel_size_estimates(PlannerInfo *root, RelOptInfo *rel,
 		var->varattno = context.min_to_max[var->varattno];
 	}
 
-	/* Save original rows before selectivity is applied.
-	 * In PG17, set_baserel_size_estimates applies baserestrictinfo selectivity
-	 * which reduces the row count. We need the original compressed row count
-	 * (number of batches) to correctly calculate decompression cost. */
-	compression_info->original_compressed_rows = rel->rows;
-
 	/*
 	 * Compute selectivity with the updated filters.
 	 */
 	set_baserel_size_estimates(root, rel);
+
+	/* Save original rows before selectivity is applied.
+	 * CRITICAL: Use rel->tuples, not rel->rows!
+	 * - rel->tuples = base row count from pg_class (without filter selectivity)
+	 * - rel->rows = estimated rows after applying baserestrictinfo selectivity
+	 *
+	 * In PG17, set_baserel_size_estimates applies baserestrictinfo selectivity
+	 * which reduces rel->rows. We need the original compressed row count
+	 * (number of batches matching metadata filters) to correctly calculate
+	 * decompression cost, since we must decompress ALL batches regardless of
+	 * value filter selectivity. */
+	compression_info->original_compressed_rows = rel->tuples;
 
 	/*
 	 * Replace the Vars back.
