@@ -748,8 +748,8 @@ cost_columnar_scan(PlannerInfo *root, const CompressionInfo *compression_info, P
 	 * decompress ALL batches that match metadata filters (min/max ranges), not just
 	 * the fraction that pass value filters. The value filters are applied AFTER
 	 * decompression, so the cost must reflect decompressing all matching batches. */
-	double total_decompressed_rows = compression_info->original_compressed_rows *
-									  compression_info->compressed_batch_size;
+	double total_decompressed_rows =
+		compression_info->original_compressed_rows * compression_info->compressed_batch_size;
 
 	/* Output rows is what we expect to return after applying filters.
 	 * Start with the assumption that all decompressed rows pass through. */
@@ -773,12 +773,18 @@ cost_columnar_scan(PlannerInfo *root, const CompressionInfo *compression_info, P
 	}
 
 	/* Debug logging for PG17 cost investigation */
-	elog(DEBUG1, "cost_columnar_scan: original_compressed=%.0f, compressed_path_rows=%.0f, "
+	elog(DEBUG1,
+		 "cost_columnar_scan: original_compressed=%.0f, compressed_path_rows=%.0f, "
 		 "batch_size=%.0f, total_decompressed=%.0f, selectivity=%.4f, output_rows=%.0f, "
 		 "compressed_cost=%.2f, cpu_tuple_cost=%.4f",
-		 compression_info->original_compressed_rows, compressed_path->rows,
-		 compression_info->compressed_batch_size, total_decompressed_rows,
-		 filter_selectivity, output_rows, compressed_path->total_cost, cpu_tuple_cost);
+		 compression_info->original_compressed_rows,
+		 compressed_path->rows,
+		 compression_info->compressed_batch_size,
+		 total_decompressed_rows,
+		 filter_selectivity,
+		 output_rows,
+		 compressed_path->total_cost,
+		 cpu_tuple_cost);
 
 	/* path->rows represents the number of rows we expect to output */
 	path->rows = output_rows;
@@ -788,8 +794,10 @@ cost_columnar_scan(PlannerInfo *root, const CompressionInfo *compression_info, P
 	 * and then apply the filter. The cost is proportional to rows processed, not rows output. */
 	path->total_cost = compressed_path->total_cost + total_decompressed_rows * cpu_tuple_cost;
 
-	elog(DEBUG1, "cost_columnar_scan: final path->rows=%.0f, path->total_cost=%.2f",
-		 path->rows, path->total_cost);
+	elog(DEBUG1,
+		 "cost_columnar_scan: final path->rows=%.0f, path->total_cost=%.2f",
+		 path->rows,
+		 path->total_cost);
 
 #if PG18_GE
 	/* PG18 changes the way we handle disabled nodes so we
