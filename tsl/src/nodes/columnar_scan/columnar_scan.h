@@ -47,6 +47,12 @@ typedef struct CompressionInfo
 
 	/* Compressed batch size estimated from statistics. */
 	double compressed_batch_size;
+
+	/* Original compressed rows before selectivity is applied.
+	 * In PG17, set_baserel_size_estimates applies baserestrictinfo selectivity
+	 * to compressed_rel->rows. We need the original value to correctly calculate
+	 * the total number of rows that will be decompressed. */
+	double original_compressed_rows;
 } CompressionInfo;
 
 typedef struct ColumnarScanPath

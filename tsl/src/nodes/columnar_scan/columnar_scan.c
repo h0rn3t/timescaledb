@@ -532,6 +532,12 @@ set_compressed_baserel_size_estimates(PlannerInfo *root, RelOptInfo *rel,
 		var->varattno = context.min_to_max[var->varattno];
 	}
 
+	/* Save original rows before selectivity is applied.
+	 * In PG17, set_baserel_size_estimates applies baserestrictinfo selectivity
+	 * which reduces the row count. We need the original compressed row count
+	 * (number of batches) to correctly calculate decompression cost. */
+	compression_info->original_compressed_rows = rel->rows;
+
 	/*
 	 * Compute selectivity with the updated filters.
 	 */
@@ -728,12 +734,22 @@ cost_columnar_scan(PlannerInfo *root, const CompressionInfo *compression_info, P
 		(compressed_path->total_cost - compressed_path->startup_cost) / compressed_rows;
 
 	/* Calculate total rows that will be decompressed from all batches.
-	 * This is the amount of work we need to do, regardless of filtering. */
-	double total_decompressed_rows = compressed_path->rows * compression_info->compressed_batch_size;
+	 * This is the amount of work we need to do, regardless of filtering.
+	 *
+	 * CRITICAL: We must use original_compressed_rows here, NOT compressed_path->rows!
+	 * In PG17, set_baserel_size_estimates applies baserestrictinfo selectivity to
+	 * compressed_rel->rows, which reduces the batch count. But we still need to
+	 * decompress ALL batches that match metadata filters (min/max ranges), not just
+	 * the fraction that pass value filters. The value filters are applied AFTER
+	 * decompression, so the cost must reflect decompressing all matching batches. */
+	double total_decompressed_rows = compression_info->original_compressed_rows *
+									  compression_info->compressed_batch_size;
 
 	/* Output rows is what we expect to return after applying filters.
 	 * Start with the assumption that all decompressed rows pass through. */
 	double output_rows = total_decompressed_rows;
+
+	Selectivity filter_selectivity = 1.0;
 
 	/* If we have filters that couldn't be pushed down to compressed data,
 	 * they will be applied during/after decompression. Use selectivity
@@ -741,14 +757,22 @@ cost_columnar_scan(PlannerInfo *root, const CompressionInfo *compression_info, P
 	if (compression_info->chunk_rel->baserestrictinfo != NIL)
 	{
 		List *decompression_filters = compression_info->chunk_rel->baserestrictinfo;
-		Selectivity filter_selectivity = clauselist_selectivity(root,
-																decompression_filters,
-																compression_info->chunk_rel->relid,
-																JOIN_INNER,
-																NULL);
+		filter_selectivity = clauselist_selectivity(root,
+													decompression_filters,
+													compression_info->chunk_rel->relid,
+													JOIN_INNER,
+													NULL);
 		/* Apply selectivity only to output rows estimate */
 		output_rows = clamp_row_est(total_decompressed_rows * filter_selectivity);
 	}
+
+	/* Debug logging for PG17 cost investigation */
+	elog(DEBUG1, "cost_columnar_scan: original_compressed=%.0f, compressed_path_rows=%.0f, "
+		 "batch_size=%.0f, total_decompressed=%.0f, selectivity=%.4f, output_rows=%.0f, "
+		 "compressed_cost=%.2f, cpu_tuple_cost=%.4f",
+		 compression_info->original_compressed_rows, compressed_path->rows,
+		 compression_info->compressed_batch_size, total_decompressed_rows,
+		 filter_selectivity, output_rows, compressed_path->total_cost, cpu_tuple_cost);
 
 	/* path->rows represents the number of rows we expect to output */
 	path->rows = output_rows;
@@ -757,6 +781,9 @@ cost_columnar_scan(PlannerInfo *root, const CompressionInfo *compression_info, P
 	 * Even with highly selective filters, we still decompress every row from every batch
 	 * and then apply the filter. The cost is proportional to rows processed, not rows output. */
 	path->total_cost = compressed_path->total_cost + total_decompressed_rows * cpu_tuple_cost;
+
+	elog(DEBUG1, "cost_columnar_scan: final path->rows=%.0f, path->total_cost=%.2f",
+		 path->rows, path->total_cost);
 
 #if PG18_GE
 	/* PG18 changes the way we handle disabled nodes so we
