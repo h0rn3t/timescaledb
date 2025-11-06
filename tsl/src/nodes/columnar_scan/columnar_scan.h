@@ -48,11 +48,13 @@ typedef struct CompressionInfo
 	/* Compressed batch size estimated from statistics. */
 	double compressed_batch_size;
 
-	/* Original compressed rows before/after selectivity is applied.
-	 * Version-specific behavior:
-	 * - PG17+: set from rel->tuples (base count without value filter selectivity)
-	 * - PG16-: set from rel->rows (count with metadata filter selectivity)
-	 * Used to correctly calculate total rows that will be decompressed. */
+	/* Original compressed batch count from pg_class statistics (rel->tuples).
+	 * This represents the actual number of compressed batches BEFORE any
+	 * selectivity is applied by set_baserel_size_estimates().
+	 * Used to correctly calculate the total number of rows that will be
+	 * decompressed, which is needed for accurate cost estimation. Value
+	 * filters are applied AFTER decompression, so cost must account for
+	 * decompressing all batches, not just the filtered result set. */
 	double original_compressed_rows;
 } CompressionInfo;
 
